@@ -1,15 +1,33 @@
 workflows:
-  android-build:
-    name: Zaarvis APK Build
-    max_build_duration: 10
+  production:
+    name: Production Build
     environment:
-      flutter: stable
+      groups:
+        - android
+      vars:
+        FLUTTER_VERSION: "3.22.2"
+
     scripts:
-      - name: Get dependencies
+      - name: Clean Project
         script: |
+          rm -rf android ios .dart_tool .flutter-plugins*
+          flutter pub cache repair
+
+      - name: Setup Project
+        script: |
+          flutter create --org com.yourdomain --template app .
+          echo "flutter.sdk=$FLUTTER_ROOT" > android/local.properties
+
+      - name: Fix Dependencies
+        script: |
+          flutter pub remove characters material_color_utilities meta vector_math
+          flutter pub add characters:1.4.0 material_color_utilities:0.11.1 meta:1.16.0 vector_math:2.1.4
           flutter pub get
-      - name: Build release APK
+
+      - name: Build APK
         script: |
-          flutter build apk --release
+          flutter clean
+          flutter build apk --release --split-per-abi
+
     artifacts:
-      - build/app/outputs/flutter-apk/app-release.apk
+      - build/app/outputs/flutter-apk/*.apk
